@@ -1,12 +1,15 @@
 import React from 'react';
 import { Button, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { useNavigate } from 'react-router-dom';
 
 function Sidebar({ onExpand }) {
+  const navigate = useNavigate();
+  
   const navItems = [
     { key: 'expand', label: 'Expand', symbol: '≡', onClick: onExpand },
     { key: 'account', label: 'Account', symbol: '👤' },
     { key: 'newChat', label: 'New Chat', symbol: '💬' },
-    { key: 'reports', label: 'Reports', symbol: '📄' },
+    { key: 'reports', label: 'Reports', symbol: '📄', onClick: () => navigate('/reports') },
     { key: 'genReport', label: 'Generate', symbol: '📝' },
     { key: 'chats', label: 'Chats', symbol: '🕘' },
     { key: 'downloads', label: 'Downloads', symbol: '⬇️' },

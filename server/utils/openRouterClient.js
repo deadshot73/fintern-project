@@ -23,8 +23,8 @@ async function callLLM({ messages, model = 'deepseek/deepseek-chat-v3-0324', tem
     );
 
     const result = response.data.choices[0].message.content.trim();
+    console.log('🤖 LLM Response:', result);
     return result;
-    console.log(result)
   } catch (error) {
     console.error('LLM error:', error.response?.data || error.message);
     throw new Error('LLM call failed');

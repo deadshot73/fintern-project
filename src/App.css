@@ -36,3 +36,48 @@
     transform: rotate(360deg);
   }
 }
+
+/* Custom styles for sticky layout */
+.sticky-sidepane {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  z-index: 1000;
+  overflow-y: auto;
+}
+
+/* Ensure proper scrolling behavior */
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
+
+#root {
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Prevent page scroll when chat reaches end */
+.chat-scroll-container {
+  overflow-y: auto;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+}
+
+.chat-scroll-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.chat-scroll-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.chat-scroll-container::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.chat-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}

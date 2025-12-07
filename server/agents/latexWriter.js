@@ -1,4 +1,4 @@
-const { callLLM } = require('../utils/openRouterClient');
+const { callLLM } = require('../utils/bedrockClient');
 
 async function runLatexWriter({ instruction, data }) {
   const systemMessage = {
@@ -7,7 +7,7 @@ async function runLatexWriter({ instruction, data }) {
 You are a LaTeX formula writer for a financial research copilot.
 
 You will receive:
-- A financial instruction (e.g., "Calculate the quick ratio using the formula: (Cash + Receivables) / Current Liabilities")
+- A financial instruction (e.g., "Calculate the debt to equity ratio using Total Debt / Total Equity Gross Minority Interest")
 - A list of example data blobs, each with:
   - ticker
   - year
@@ -15,38 +15,60 @@ You will receive:
 
 🎯 Your task is to:
 1. Convert the financial formula into a valid LaTeX expression
-2. Optionally plug in example numeric values (only if simple)
-3. Return only the LaTeX code block
+2. Return ONLY the LaTeX code without any explanatory text
 
 ✅ Output format (example):
 \\[
-\\frac{\\text{Cash} + \\text{Receivables}}{\\text{Current Liabilities}} = \\frac{1000000 + 500000}{800000}
+\\text{Debt to Equity Ratio} = \\frac{\\text{Total Debt}}{\\text{Total Equity Gross Minority Interest}}
 \\]
 
-❌ Do NOT include explanation or text.
-❌ Do NOT return markdown or JSON.
-✅ Return only valid LaTeX enclosed in \\[ ... \\].
+❌ Do NOT include any explanatory text like "Here's the LaTeX code block for..."
+❌ Do NOT include markdown formatting
+❌ Do NOT include JSON
+✅ Return ONLY the LaTeX code enclosed in \\[ ... \\].
+✅ The response should start with \\[ and end with \\].
 `
   };
 
   const userMessage = {
     role: 'user',
     content: `
+Convert this instruction to LaTeX formula. Return ONLY the LaTeX code.
+
 Instruction:
 ${instruction}
 
 Financial Data Samples (from multiple companies):
 ${JSON.stringify(data, null, 2)}
+
+Return ONLY the LaTeX code starting with \\[ and ending with \\]. Do not include any other text.
 `
   };
 
   const response = await callLLM({
     messages: [systemMessage, userMessage],
-    model: 'deepseek/deepseek-chat-v3-0324',
+    model: 'mistral.mixtral-8x7b-instruct-v0:1',
     temperature: 0.1
   });
 
-  return response.trim();
+  // Clean the response to extract only the LaTeX code
+  let cleaned = response.trim();
+  
+  // Try to extract LaTeX code if it's wrapped in \[ ... \]
+  const latexMatch = cleaned.match(/\\\[([\s\S]*?)\\\]/);
+  if (latexMatch) {
+    cleaned = `\\[${latexMatch[1].trim()}\\]`;
+  }
+  
+  // If no \[ ... \] found, try to find any LaTeX-like content
+  if (!cleaned.startsWith('\\[')) {
+    const anyLatexMatch = cleaned.match(/(\\[a-zA-Z]+.*)/);
+    if (anyLatexMatch) {
+      cleaned = `\\[${anyLatexMatch[1].trim()}\\]`;
+    }
+  }
+  
+  return cleaned;
 }
 
 module.exports = { runLatexWriter };

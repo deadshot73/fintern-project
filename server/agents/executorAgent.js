@@ -10,9 +10,12 @@ const { runAnswerAgent       } = require('./answerAgent');
  * @param {string}   userPrompt
  */
 async function runExecutor (plan, dataFiles, userPrompt) {
+  console.log('🔧 Executor Plan:', JSON.stringify(plan, null, 2));
+  console.log('📊 Data Files:', dataFiles.length, 'files');
   const context = {};
 
   for (const step of plan.steps) {
+    console.log('🔄 Processing step:', step.agent, 'with input:', step.input);
     const { agent, instruction, input, output_format } = step;
     const outputKey = output_format?.key || agent;
     let relevantData = {};
@@ -36,12 +39,13 @@ async function runExecutor (plan, dataFiles, userPrompt) {
           }
         }
       } else {
-        // FinancialCalculator / LatexWriter keep previous compact map
+        // FinancialCalculator / LatexWriter need year-specific data
         for (const file of dataFiles) {
           for (const field of input.fields || []) {
             if (file.data?.[field] !== undefined) {
               if (!relevantData[file.ticker]) relevantData[file.ticker] = {};
-              relevantData[file.ticker][field] = file.data[field];
+              if (!relevantData[file.ticker][file.year]) relevantData[file.ticker][file.year] = {};
+              relevantData[file.ticker][file.year][field] = file.data[field];
             }
           }
         }
@@ -64,13 +68,17 @@ async function runExecutor (plan, dataFiles, userPrompt) {
 
       case 'GraphQueryWriter':
         console.log(`📈 [${agent}] Running…`);
-        console.log('   ↳ data sample →', JSON.stringify(relevantData.slice(0, 3), null, 2));
+        console.log('   ↳ relevantData type:', typeof relevantData, Array.isArray(relevantData) ? 'array' : 'not array');
+        console.log('   ↳ relevantData:', relevantData);
+        if (Array.isArray(relevantData)) {
+          console.log('   ↳ data sample →', JSON.stringify(relevantData.slice(0, 3), null, 2));
+        }
         result = await runGraphQueryWriter({ userPrompt, data: relevantData });
         break;
 
       case 'AnswerAgent':
         console.log(`🧾 [${agent}] Running…`);
-        result = await runAnswerAgent({ instruction, context, userPrompt, plan });
+        result = await runAnswerAgent({ userPrompt, plan, context });
         break;
 
       default:

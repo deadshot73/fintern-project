@@ -20,8 +20,8 @@ function Login() {
       
       // ✅ Store login info
       localStorage.setItem('loggedIn', 'true');
-      localStorage.setItem('username', res.data.username);
-      localStorage.setItem('userId', res.data.userId); // ← THIS is the new line
+      localStorage.setItem('email', res.data.email);
+      localStorage.setItem('userId', res.data.userId);
   
       // ✅ Redirect to home page
       navigate('/');

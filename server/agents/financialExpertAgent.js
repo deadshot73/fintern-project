@@ -1,10 +1,10 @@
-const { callLLM } = require('../utils/openRouterClient');
+const { callLLM } = require('../utils/bedrockClient');
 
 async function runFinancialExpertAgent({ userPrompt, data }) {
   const systemMessage = {
     role: 'system',
     content: `
-You are a financial expert assistant.
+You are a financial expert assistant. You MUST respond with ONLY valid JSON in the exact format specified.
 
 You will receive:
 - A user prompt about one or more companies' financials
@@ -14,67 +14,101 @@ You will receive:
   - statement_type
   - data: a dictionary of field name → value
 
-Your job is to:
-1. If the user asks for a **visualization, chart, trend, or comparison**, return type "graph" with an appropriate high-level instruction.
-2. If the requested metric can be directly extracted from the data, return type "direct_answer" with values.
-3. If it requires calculation, return type "instruction" with a complete formula in natural language (not math notation).
+Your job is to analyze the request and return ONLY a JSON object in one of these formats:
 
-🧠 For "graph" type, respond like:
-{
-  "type": "graph",
-  "instruction": "Plot the trend of Net Income from 2020 to 2024 for each company"
-}
-
-📘 For direct metric:
+1. For **direct metrics** (values that exist in the data):
 {
   "type": "direct_answer",
-  "key": "Net Income",
+  "key": "Total Debt",
   "values": [
-    { "ticker": "AAPL", "year": "2023", "value": 96995000 },
-    { "ticker": "GOOG", "year": "2023", "value": 73795000 }
+    { "ticker": "AAPL", "year": "2022", "value": 132480000 }
   ],
-  "message": "The net income in 2023 is $96.9B for Apple and $73.8B for Google."
+  "message": "Apple's total debt in 2022 was $132.48 billion."
 }
 
-📐 For derived metric:
+2. For **calculated metrics** (like ratios):
 {
   "type": "instruction",
-  "instruction": "Calculate the quick ratio for each company using the formula: (Cash + Receivables) / Current Liabilities"
+  "instruction": "Calculate the debt to equity ratio using the formula: Total Debt / Total Equity Gross Minority Interest"
 }
 
-✅ Always match field names to the ones present in the data
-✅ NEVER invent companies, fields, or formulas
-✅ Return clean, parseable JSON only
-❌ No markdown or prose explanations
+3. For **visualizations, charts, trends, or comparisons**:
+{
+  "type": "graph",
+  "instruction": "Plot the trend of debt to equity ratio from 2021 to 2024 for each company"
+}
+
+✅ Rules:
+- Use exact field names from the data
+- For debt to equity ratio, use "Total Debt" and "Total Equity Gross Minority Interest"
+- Return ONLY the JSON object, no explanations or prose
+- Do not include markdown formatting
+- Do not ask questions or provide suggestions
+
+❌ Do NOT include:
+- Explanations outside the JSON
+- Questions or suggestions
+- Markdown formatting
+- Prose text
+- Multiple JSON objects
+
+Return ONLY the JSON object in the exact format above.
 `
   };
 
   const userMessage = {
     role: 'user',
     content: `
-User Prompt:
-${userPrompt}
+Analyze this financial query and return ONLY a JSON object in the specified format.
 
-Financial Data:
+User Query: ${userPrompt}
+
+Available Financial Data:
 ${JSON.stringify(data, null, 2)}
+
+Return ONLY the JSON object. Do not include any explanations, questions, or prose text.
 `
   };
 
   const response = await callLLM({
     messages: [systemMessage, userMessage],
-    model: 'deepseek/deepseek-chat-v3-0324',
+    model: 'mistral.mixtral-8x7b-instruct-v0:1',
     temperature: 0.2
   });
 
   try {
-    const cleaned = response
+    let cleaned = response
       .replace(/```json/g, '')
       .replace(/```/g, '')
       .trim();
 
-    return JSON.parse(cleaned);
+    // Try to extract JSON from the response if it's mixed with text
+    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      cleaned = jsonMatch[0];
+    }
+
+    const parsed = JSON.parse(cleaned);
+    
+    // Validate that we have the required fields
+    if (!parsed.type) {
+      console.error('❌ Missing type field in response:', parsed);
+      return null;
+    }
+    
+    return parsed;
   } catch (err) {
-    console.error('❌ Financial Expert Agent - Failed to parse:', response);
+    console.error('❌ Failed to parse Financial Expert Agent output:', response);
+    console.error('❌ Parse error:', err.message);
+    
+    // Try to create a fallback response for simple queries
+    if (response.toLowerCase().includes('debt to equity ratio')) {
+      return {
+        type: "instruction",
+        instruction: "Calculate the debt to equity ratio using the formula: Total Debt / Total Equity Gross Minority Interest"
+      };
+    }
+    
     return null;
   }
 }

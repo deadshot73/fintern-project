@@ -8,6 +8,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import Signup from './pages/Signup';
 import Login from './pages/Login';
 import CompanyAdminPage from './pages/CompanyAdminPage';
+import ReportsPage from './pages/ReportsPage';
 
 
   
@@ -21,6 +22,7 @@ root.render(
       <Route path="/login" element={<Login />} />
       <Route path="/chat/:chat_id" element={<App />} />
       <Route path="/admin/companies" element={<CompanyAdminPage />} />
+      <Route path="/reports" element={<ReportsPage />} />
 
     </Routes>
   </BrowserRouter>

@@ -1,4 +1,4 @@
-const { callLLM } = require('../utils/openRouterClient');
+const { callLLM } = require('../utils/bedrockClient');
 
 async function runFinancialCalculator({ instruction, data }) {
   const systemMessage = {
@@ -7,23 +7,28 @@ async function runFinancialCalculator({ instruction, data }) {
 You are a financial calculator agent.
 
 You will receive:
-- A natural language instruction describing a financial metric (e.g., quick ratio, EPS, ROE)
-- A list of financial data entries. Each entry contains:
-  - ticker (e.g. AAPL)
-  - year (e.g. 2023)
-  - data: a JSON object of financial fields and values
+- A natural language instruction describing a financial metric (e.g., current ratio, quick ratio, EPS, ROE)
+- Financial data organized by ticker and year:
+  {
+    "AAPL": {
+      "2021": { "Current Assets": 1000000, "Current Liabilities": 500000 },
+      "2022": { "Current Assets": 1100000, "Current Liabilities": 550000 },
+      "2023": { "Current Assets": 1200000, "Current Liabilities": 600000 }
+    }
+  }
 
 🎯 Your job is to:
-1. Apply the same instruction to each company's financial data
-2. Compute the metric using the fields available
+1. Apply the same instruction to each company and year's financial data
+2. Compute the metric using the fields available for each year
 3. Return your output as an array of results, each tagged with its ticker and year
 
 ✅ Output format:
 {
   "key": "metric_name_in_snake_case",
   "values": [
-    { "ticker": "AAPL", "year": 2023, "value": 1.27 },
-    { "ticker": "GOOG", "year": 2023, "value": 1.45 }
+    { "ticker": "AAPL", "year": 2021, "value": 2.0 },
+    { "ticker": "AAPL", "year": 2022, "value": 2.0 },
+    { "ticker": "AAPL", "year": 2023, "value": 2.0 }
   ]
 }
 
@@ -45,9 +50,11 @@ ${JSON.stringify(data, null, 2)}
 `
   };
 
+  console.log('🔢 FinancialCalculator Input Data:', JSON.stringify(data, null, 2));
+
   const response = await callLLM({
     messages: [systemMessage, userMessage],
-    model: 'deepseek/deepseek-chat-v3-0324',
+    model: 'mistral.mixtral-8x7b-instruct-v0:1',
     temperature: 0.2
   });
 

@@ -19,7 +19,7 @@ function InputBar({ onSendMessage }) {
   };
 
   return (
-    <div className="p-3 bg-light border-top">
+    <div className="p-3 bg-light border-top flex-shrink-0">
       <InputGroup>
         <Form.Control
           type="text"

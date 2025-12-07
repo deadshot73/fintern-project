@@ -3,9 +3,18 @@ import 'katex/dist/katex.min.css';
 
 export default function AgentLatex({ latex }) {
   try {
+    // Clean the LaTeX text - remove \[ and \] delimiters if present
+    let cleanLatex = latex;
+    if (cleanLatex.startsWith('\\[') && cleanLatex.endsWith('\\]')) {
+      cleanLatex = cleanLatex.slice(2, -2).trim();
+    }
+    
+    console.log('🧮 AgentLatex received:', latex);
+    console.log('🧮 Cleaned LaTeX:', cleanLatex);
+    
     return (
       <div className="bg-light p-2 rounded text-start me-auto" style={{ maxWidth: '75%' }}>
-        <BlockMath math={latex} />
+        <BlockMath math={cleanLatex} />
       </div>
     );
   } catch (err) {

@@ -3,7 +3,7 @@ import { Form, Button, Alert, Card } from 'react-bootstrap';
 import axios from 'axios';
 
 function Signup() {
-  const [form, setForm] = useState({ username: '', email: '', password: '' });
+  const [form, setForm] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -31,11 +31,6 @@ function Signup() {
         {success && <Alert variant="success">{success}</Alert>}
 
         <Form onSubmit={handleSubmit}>
-          <Form.Group className="mb-3">
-            <Form.Label>Username</Form.Label>
-            <Form.Control name="username" onChange={handleChange} required />
-          </Form.Group>
-
           <Form.Group className="mb-3">
             <Form.Label>Email</Form.Label>
             <Form.Control type="email" name="email" onChange={handleChange} required />
